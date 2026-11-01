@@ -23,6 +23,9 @@
 #include <string.h>
 #include <unistd.h>
 #include "ft232all.h"
+extern "C" {
+#include "ch34x_i2c.h"
+}
 #include <libusb.h>
 
 #define VENDOR  0x0403
@@ -221,7 +224,7 @@ static void SendByteAndCheckACK(unsigned char *buf, uint32_t *ptr, uint8_t data)
     buf[(*ptr)++] = 0x00; 
 }
 
-int ft232I2cBlockWrite(uint8_t *data, uint32_t address, uint32_t blockSize, uint32_t sectorSize, uint8_t algorithm)
+int ft232I2cBlockWrite(uint8_t *data, uint32_t address, uint32_t blockSize, uint32_t sectorSize, uint8_t algorithm, uint8_t chipAddr)
 {
     unsigned char buf[1024] = {0};
     uint32_t ptr, i;
@@ -229,6 +232,7 @@ int ft232I2cBlockWrite(uint8_t *data, uint32_t address, uint32_t blockSize, uint
     uint8_t deviceAddress = 0;
     uint8_t wordAddressLo = 0;
     uint8_t wordAddressHi = 0; //for 24c32 and more
+    uint8_t devSelect = i2cDeviceSelect(algorithm, chipAddr);
     
     int ret;
     uint32_t step, maxstep;
@@ -248,7 +252,7 @@ int ft232I2cBlockWrite(uint8_t *data, uint32_t address, uint32_t blockSize, uint
             if ((algorithm & 0x0f) == 0x01) //1 byte address
             {
                 
-                deviceAddress = (uint8_t) ( ((((address & 0xff00) >> 8) & ((algorithm & 0xf0) >> 4)) << 1) | 0xa0);
+                deviceAddress = (uint8_t) ( ((((address & 0xff00) >> 8) & ((algorithm & 0xf0) >> 4)) << 1) | devSelect);
                 wordAddressLo = (uint8_t) (address & 0x00ff);
                 SendByteAndCheckACK(buf, &ptr, deviceAddress);
                 SendByteAndCheckACK(buf, &ptr, wordAddressLo);
@@ -256,7 +260,7 @@ int ft232I2cBlockWrite(uint8_t *data, uint32_t address, uint32_t blockSize, uint
             if ((algorithm & 0x0f) == 0x02) //2 byte address
             {
                 
-                deviceAddress = (uint8_t) ( ((((address & 0xff0000) >> 16) & ((algorithm & 0xf0) >> 4)) << 1) | 0xa0);
+                deviceAddress = (uint8_t) ( ((((address & 0xff0000) >> 16) & ((algorithm & 0xf0) >> 4)) << 1) | devSelect);
                 wordAddressLo = (uint8_t) (address & 0x00ff);
                 wordAddressHi = (uint8_t) ((address & 0xff00) >> 8);
                 SendByteAndCheckACK(buf, &ptr, deviceAddress);
@@ -266,7 +270,7 @@ int ft232I2cBlockWrite(uint8_t *data, uint32_t address, uint32_t blockSize, uint
             if ((algorithm & 0x0f) == 0x0a) //2 byte address, swap bits for 24LC1025
             {
                 
-                deviceAddress = (uint8_t) ( ((((address & 0x010000) >> 14) & ((algorithm & 0xf0) >> 4)) << 1) | 0xa0);
+                deviceAddress = (uint8_t) ( ((((address & 0x010000) >> 14) & ((algorithm & 0xf0) >> 4)) << 1) | devSelect);
                 wordAddressLo = (uint8_t) (address & 0x00ff);
                 wordAddressHi = (uint8_t) ((address & 0xff00) >> 8);
                 SendByteAndCheckACK(buf, &ptr, deviceAddress);
@@ -276,7 +280,7 @@ int ft232I2cBlockWrite(uint8_t *data, uint32_t address, uint32_t blockSize, uint
             if ((algorithm & 0x0f) == 0x0e) //2 byte address, move high bit and swap bits for 24LC515
             {
                 
-                deviceAddress = (uint8_t) ( ((((address & 0x008000) >> 13) & ((algorithm & 0xf0) >> 4)) << 1) | 0xa0);
+                deviceAddress = (uint8_t) ( ((((address & 0x008000) >> 13) & ((algorithm & 0xf0) >> 4)) << 1) | devSelect);
                 wordAddressLo = (uint8_t) (address & 0x00ff);
                 wordAddressHi = (uint8_t) ((address & 0xff00) >> 8);
                 SendByteAndCheckACK(buf, &ptr, deviceAddress);
@@ -324,7 +328,7 @@ int ft232I2cBlockWrite(uint8_t *data, uint32_t address, uint32_t blockSize, uint
     return 0;
 }
 
-int ft232I2cBlockRead(uint8_t *data, uint32_t address, uint32_t blockSize, uint8_t algorithm)
+int ft232I2cBlockRead(uint8_t *data, uint32_t address, uint32_t blockSize, uint8_t algorithm, uint8_t chipAddr)
 {
     unsigned char buf[4096] = {0};
     uint32_t ptr, i;
@@ -332,6 +336,7 @@ int ft232I2cBlockRead(uint8_t *data, uint32_t address, uint32_t blockSize, uint8
     uint8_t deviceAddress = 0;
     uint8_t wordAddressLo = 0;
     uint8_t wordAddressHi = 0;
+    uint8_t devSelect = i2cDeviceSelect(algorithm, chipAddr);
 
     uint32_t step, maxstep;
     uint32_t size = blockSize;
@@ -350,7 +355,7 @@ int ft232I2cBlockRead(uint8_t *data, uint32_t address, uint32_t blockSize, uint8
             if ((algorithm & 0x0f) == 0x01) //1 byte address
             {
                 
-                deviceAddress = (uint8_t) ( ((((address & 0xff00) >> 8) & ((algorithm & 0xf0) >> 4)) << 1) | 0xa0);
+                deviceAddress = (uint8_t) ( ((((address & 0xff00) >> 8) & ((algorithm & 0xf0) >> 4)) << 1) | devSelect);
                 wordAddressLo = (uint8_t) (address & 0x00ff);
                 SendByteAndCheckACK(buf, &ptr, deviceAddress);
                 SendByteAndCheckACK(buf, &ptr, wordAddressLo);
@@ -358,7 +363,7 @@ int ft232I2cBlockRead(uint8_t *data, uint32_t address, uint32_t blockSize, uint8
             if ((algorithm & 0x0f) == 0x02) //2 byte address
             {
                 
-                deviceAddress = (uint8_t) ( ((((address & 0xff0000) >> 16) & ((algorithm & 0xf0) >> 4)) << 1) | 0xa0);
+                deviceAddress = (uint8_t) ( ((((address & 0xff0000) >> 16) & ((algorithm & 0xf0) >> 4)) << 1) | devSelect);
                 wordAddressLo = (uint8_t) (address & 0x00ff);
                 wordAddressHi = (uint8_t) ((address & 0xff00) >> 8);
                 SendByteAndCheckACK(buf, &ptr, deviceAddress);
@@ -368,7 +373,7 @@ int ft232I2cBlockRead(uint8_t *data, uint32_t address, uint32_t blockSize, uint8
             if ((algorithm & 0x0f) == 0x0a) //2 byte address, swap bits for 24LC1025
             {
                 
-                deviceAddress = (uint8_t) ( ((((address & 0x010000) >> 14) & ((algorithm & 0xf0) >> 4)) << 1) | 0xa0);
+                deviceAddress = (uint8_t) ( ((((address & 0x010000) >> 14) & ((algorithm & 0xf0) >> 4)) << 1) | devSelect);
                 wordAddressLo = (uint8_t) (address & 0x00ff);
                 wordAddressHi = (uint8_t) ((address & 0xff00) >> 8);
                 SendByteAndCheckACK(buf, &ptr, deviceAddress);
@@ -378,7 +383,7 @@ int ft232I2cBlockRead(uint8_t *data, uint32_t address, uint32_t blockSize, uint8
             if ((algorithm & 0x0f) == 0x0e) //2 byte address, move high bit and swap bits for 24LC515
             {
                 
-                deviceAddress = (uint8_t) ( ((((address & 0x008000) >> 13) & ((algorithm & 0xf0) >> 4)) << 1) | 0xa0);
+                deviceAddress = (uint8_t) ( ((((address & 0x008000) >> 13) & ((algorithm & 0xf0) >> 4)) << 1) | devSelect);
                 wordAddressLo = (uint8_t) (address & 0x00ff);
                 wordAddressHi = (uint8_t) ((address & 0xff00) >> 8);
                 SendByteAndCheckACK(buf, &ptr, deviceAddress);

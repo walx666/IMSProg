@@ -37,6 +37,7 @@
 #include "dialogsetaddr.h"
 #include "dialogsecurity.h"
 #include "dialognandsecurity.h"
+#include "dialogi2creg.h"
 #include "dialognandsr.h"
 #include "dialogbbm.h"
 #include "dialogfill.h"
@@ -122,6 +123,7 @@ MainWindow::MainWindow(QWidget *parent) :
  currentBlockSize = 0;
  currentPageSize = 0;
  currentAlgorithm = 0;
+ currentI2CChipAddr = 0;
  currentChipType = 0;
  currentDelay = 1000;
  blockStartAddr = 0;
@@ -297,8 +299,8 @@ void MainWindow::on_pushButton_clicked()
                  res = snor_read_param(buf.get(), curBlock * step, step, step, currentAddr4bit, current_programmer);
               break;
               case 1:            //I2C
-                   if (current_programmer < 4) res = ch34xi2cBlockRead(buf.get(), curBlock * step, step, currentAlgorithm, current_programmer);
-                   else res = ft232I2cBlockRead(buf.get(), curBlock * step, step, currentAlgorithm);
+                   if (current_programmer < 4) res = ch34xi2cBlockRead(buf.get(), curBlock * step, step, currentAlgorithm, current_programmer, currentI2CChipAddr);
+                   else res = ft232I2cBlockRead(buf.get(), curBlock * step, step, currentAlgorithm, currentI2CChipAddr);
                    if (res==0) res = 1;
               break;
               case 2:
@@ -828,8 +830,8 @@ void MainWindow::on_actionErase_triggered()
         }
         for (curBlock = 0; curBlock < numBlocks; curBlock++)
         {
-            if (current_programmer < 4) res = ch34xi2cBlockWrite(buf.get(), curBlock * step, step, currentPageSize, currentAlgorithm, current_programmer);
-            else res = ft232I2cBlockWrite(buf.get(), curBlock * step, step, currentPageSize, currentAlgorithm);
+            if (current_programmer < 4) res = ch34xi2cBlockWrite(buf.get(), curBlock * step, step, currentPageSize, currentAlgorithm, current_programmer, currentI2CChipAddr);
+            else res = ft232I2cBlockWrite(buf.get(), curBlock * step, step, currentPageSize, currentAlgorithm, currentI2CChipAddr);
             if (res==0) res = 1;
             qApp->processEvents();
             ui->progressBar->setValue( static_cast<int>(curBlock));
@@ -1129,8 +1131,8 @@ void MainWindow::on_actionWrite_triggered()
                        break;
                        case 1:                           //I2C
                           addrSrc = addrSrc + step;
-                           if (current_programmer < 4) res = ch34xi2cBlockWrite(buf.get(), curBlock * step, step, currentPageSize, currentAlgorithm, current_programmer);
-                           else res = ft232I2cBlockWrite(buf.get(), curBlock * step, step, currentPageSize, currentAlgorithm);
+                           if (current_programmer < 4) res = ch34xi2cBlockWrite(buf.get(), curBlock * step, step, currentPageSize, currentAlgorithm, current_programmer, currentI2CChipAddr);
+                           else res = ft232I2cBlockWrite(buf.get(), curBlock * step, step, currentPageSize, currentAlgorithm, currentI2CChipAddr);
                           if (res==0) res = 1;
                        break;
                        case 2:                           //MicroWire
@@ -1264,6 +1266,7 @@ void MainWindow::on_comboBox_man_currentIndexChanged(int index)
 
 void MainWindow::on_comboBox_name_currentTextChanged(const QString &arg1)
 {
+    if (currentChipType == 1) ui->actionSecurity_registers->setEnabled(DialogI2CReg::hasRegisters(arg1));
     int i, index;
     oldFileName = fileName;
     QString manName = ui->comboBox_man->currentText();
@@ -1306,6 +1309,7 @@ void MainWindow::on_comboBox_name_currentTextChanged(const QString &arg1)
                }
                currentAlgorithm = chips[i].algorithmCode;
                currentDelay = chips[i].delay;
+               updateI2CChipAddr();
 
                defaultSpeed = getInterfaceSpeed(current_programmer, currentChipType, currentDelay);
                index = ui->comboBox_i2cSpeed->findData(defaultSpeed);
@@ -1437,8 +1441,8 @@ void MainWindow::on_actionVerify_triggered()
                       break;
                       case 1:
                          //I2C
-                          if (current_programmer < 4) res = ch34xi2cBlockRead(buf.get(), curBlock * step, step, currentAlgorithm, current_programmer);
-                          else res = ft232I2cBlockRead(buf.get(), curBlock * step, step, currentAlgorithm);
+                          if (current_programmer < 4) res = ch34xi2cBlockRead(buf.get(), curBlock * step, step, currentAlgorithm, current_programmer, currentI2CChipAddr);
+                          else res = ft232I2cBlockRead(buf.get(), curBlock * step, step, currentAlgorithm, currentI2CChipAddr);
                          if (res==0) res = 1;
                       break;
                       case 2:
@@ -1834,11 +1838,23 @@ void MainWindow::on_comboBox_type_currentIndexChanged(int index)
      {
          ui->comboBox_i2cSpeed->hide();
          ui->label_10->hide();
+         ui->label_13->hide();
+         ui->label_i2cAddrFix->hide();
+         ui->pushButton_i2cA2->hide();
+         ui->pushButton_i2cA1->hide();
+         ui->pushButton_i2cA0->hide();
+         ui->label_i2cAddr->hide();
      }
      else
      {
          ui->comboBox_i2cSpeed->show();
          ui->label_10->show();
+         ui->label_13->show();
+         ui->label_i2cAddrFix->show();
+         ui->pushButton_i2cA2->show();
+         ui->pushButton_i2cA1->show();
+         ui->pushButton_i2cA0->show();
+         ui->label_i2cAddr->show();
      }
      if (index > 2)
      {
@@ -1891,6 +1907,57 @@ void MainWindow::on_comboBox_i2cSpeed_currentIndexChanged(int index)
 {
    currentI2CBusSpeed = static_cast<uint16_t>(ui->comboBox_i2cSpeed->currentData().toUInt());
    index++;
+}
+
+void MainWindow::updateI2CChipAddr()
+{
+    // Device address byte: 1 0 1 0 A2 A1 A0 R/W
+    // Bits used by the chip for memory addressing (A16, A17...) can not be selected
+    uint8_t memBits = i2cMemoryAddrBits(currentAlgorithm);
+    QPushButton *buttons[3] = {ui->pushButton_i2cA0, ui->pushButton_i2cA1, ui->pushButton_i2cA2};
+    currentI2CChipAddr = 0;
+    for (int i = 0; i < 3; i++)
+    {
+        uint8_t bit = static_cast<uint8_t>(0x02 << i);
+        if (memBits & bit)
+        {
+            buttons[i]->setEnabled(false);
+            buttons[i]->setText("x");
+        }
+        else
+        {
+            buttons[i]->setEnabled(true);
+            buttons[i]->setText(buttons[i]->isChecked() ? "1" : "0");
+            if (buttons[i]->isChecked()) currentI2CChipAddr |= bit;
+        }
+    }
+    ui->label_i2cAddr->setText(QString::number(0xa0 | currentI2CChipAddr, 16).toUpper());
+}
+
+void MainWindow::setI2CChipAddr(uint8_t addr)
+{
+    ui->pushButton_i2cA2->setChecked((addr & 0x08) != 0);
+    ui->pushButton_i2cA1->setChecked((addr & 0x04) != 0);
+    ui->pushButton_i2cA0->setChecked((addr & 0x02) != 0);
+    updateI2CChipAddr();
+}
+
+void MainWindow::on_pushButton_i2cA2_toggled(bool checked)
+{
+    Q_UNUSED(checked);
+    updateI2CChipAddr();
+}
+
+void MainWindow::on_pushButton_i2cA1_toggled(bool checked)
+{
+    Q_UNUSED(checked);
+    updateI2CChipAddr();
+}
+
+void MainWindow::on_pushButton_i2cA0_toggled(bool checked)
+{
+    Q_UNUSED(checked);
+    updateI2CChipAddr();
 }
 
 void MainWindow::on_comboBox_ECC_currentIndexChanged(int index)
@@ -1998,6 +2065,9 @@ void MainWindow::doNotDisturb()
    ui->comboBox_vcc->setDisabled(true);
    ui->comboBox_addr4bit->setDisabled(true);
    ui->comboBox_i2cSpeed->setDisabled(true);
+   ui->pushButton_i2cA2->setDisabled(true);
+   ui->pushButton_i2cA1->setDisabled(true);
+   ui->pushButton_i2cA0->setDisabled(true);
    ui->comboBox_ECC->setDisabled(true);
    ui->comboBox_raw->setDisabled(true);
 
@@ -2042,6 +2112,7 @@ void MainWindow::doNotDisturbCancel()
    ui->actionShow_programmer_version->setDisabled(false);
    if ((currentChipType == 0) || (currentChipType == 6) || (currentChipType > 2)) ui->actionChip_info->setDisabled(false);
    if ((currentChipType == 0) || (currentChipType == 6)) ui->actionSecurity_registers->setDisabled(false);
+   if ((currentChipType == 1) && DialogI2CReg::hasRegisters(ui->comboBox_name->currentText())) ui->actionSecurity_registers->setDisabled(false);
    if (currentChipType == 6) ui->actionBad_block_management->setDisabled(false);
    ui->actionStop->setDisabled(true);
 
@@ -2058,6 +2129,7 @@ void MainWindow::doNotDisturbCancel()
    ui->comboBox_vcc->setDisabled(false);
    ui->comboBox_addr4bit->setDisabled(false);
    ui->comboBox_i2cSpeed->setDisabled(false);
+   updateI2CChipAddr();
    ui->comboBox_ECC->setDisabled(false);
    ui->comboBox_raw->setDisabled(false);
 
@@ -2343,6 +2415,18 @@ void MainWindow::on_actionSecurity_registers_triggered()
 
         }
         else QMessageBox::about(this, tr("Error"), tr("There are no security registers in this chip or the current version of IMSProg does not support this algorithm."));
+    }
+    if ((currentChipType == 1) && DialogI2CReg::hasRegisters(ui->comboBox_name->currentText()))
+    {
+        timer->stop();
+        DialogI2CReg* i2cRegDialog = new DialogI2CReg(this);
+        connect(i2cRegDialog, SIGNAL(closeRequestHasArrived()), this, SLOT(closeSR()));
+        connect(i2cRegDialog, SIGNAL(chipAddrChanged(uint8_t)), this, SLOT(setI2CChipAddr(uint8_t)));
+        i2cRegDialog->setDeviceType(current_programmer);
+        i2cRegDialog->setAlgorithm(currentAlgorithm);
+        i2cRegDialog->setChipAddr(currentI2CChipAddr);
+        i2cRegDialog->setBusSpeed(currentI2CBusSpeed);
+        i2cRegDialog->show();
     }
     if (currentChipType == 6)
     {
@@ -2876,8 +2960,8 @@ void MainWindow::on_actionCheck_erase_triggered()
                       break;
                       case 1:
                          //I2C
-                         if (current_programmer < 4) res = ch34xi2cBlockRead(buf.get(), curBlock * step, step, currentAlgorithm, current_programmer);
-                         else res = ft232I2cBlockRead(buf.get(), curBlock * step, step, currentAlgorithm);
+                         if (current_programmer < 4) res = ch34xi2cBlockRead(buf.get(), curBlock * step, step, currentAlgorithm, current_programmer, currentI2CChipAddr);
+                         else res = ft232I2cBlockRead(buf.get(), curBlock * step, step, currentAlgorithm, currentI2CChipAddr);
                          if (res==0) res = 1;
                       break;
                       case 2:

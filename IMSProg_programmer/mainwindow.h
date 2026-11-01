@@ -137,6 +137,11 @@ private slots:
     void handleScroll();
     void clearCheckboxes();
     void on_actionFT232H_v1_2_triggered();
+    void on_pushButton_i2cA2_toggled(bool checked);
+    void on_pushButton_i2cA1_toggled(bool checked);
+    void on_pushButton_i2cA0_toggled(bool checked);
+    void updateI2CChipAddr();
+    void setI2CChipAddr(uint8_t addr);
 
 private:
     Ui::MainWindow *ui;
@@ -147,6 +152,7 @@ private:
     QByteArray chipData, oldChipData;
     uint32_t currentChipSize, currentNumBlocks, currentBlockSize, currentPageSize, currentECCsize;
     uint8_t currentAlgorithm, currentChipType;
+    uint8_t currentI2CChipAddr;
     uint16_t currentDelay, defaultSpeed, currentI2CBusSpeed;
     unsigned int currentAddr4bit;
     bool isHalted;

@@ -38,7 +38,32 @@
 #define	ch34x_CMD_I2C_STM_SET		0x60
 #define	ch34x_CMD_I2C_STM_END		0x00
 
-int ch34xi2cBlockRead(uint8_t * buf, uint32_t address, uint32_t blockSize, uint8_t algorithm, uint8_t progDevice);
-int ch34xi2cBlockWrite(uint8_t * buf, uint32_t address, uint32_t blockSize, uint32_t sectorSize, uint8_t algorithm, uint8_t progDevice);
+// Bits 3..1 of the device address byte (1010 A2 A1 A0 R/W) that carry memory address bits
+static inline uint8_t i2cMemoryAddrBits(uint8_t algorithm)
+{
+    if (((algorithm & 0x0f) == 0x0a) || ((algorithm & 0x0f) == 0x0e)) return 0x08; //24LC1025, 24LC515: block select bit B0
+    return (uint8_t)(((algorithm & 0xf0) >> 4) << 1) & 0x0e;
+}
+
+// chipAddr bits 7..4: device type identifier (0 - memory array 1010, 0x0b - registers / ID page 1011 of M24MxxE-U)
+// chipAddr bits 3..1: chip enable bits (E2 E1 E0 pins or C2 C1 of the configurable device address register)
+#define I2C_DEVTYPE_MEMORY  0xa0
+#define I2C_DEVTYPE_REG     0xb0
+
+// Chip enable bits set by user, without the bits used for memory addressing
+static inline uint8_t i2cChipEnableBits(uint8_t algorithm, uint8_t chipAddr)
+{
+    return (uint8_t)(chipAddr & 0x0e & ~i2cMemoryAddrBits(algorithm));
+}
+
+// Device select code without memory address bits and R/W bit
+static inline uint8_t i2cDeviceSelect(uint8_t algorithm, uint8_t chipAddr)
+{
+    uint8_t devType = (chipAddr & 0xf0) ? (uint8_t)(chipAddr & 0xf0) : I2C_DEVTYPE_MEMORY;
+    return (uint8_t)(devType | i2cChipEnableBits(algorithm, chipAddr));
+}
+
+int ch34xi2cBlockRead(uint8_t * buf, uint32_t address, uint32_t blockSize, uint8_t algorithm, uint8_t progDevice, uint8_t chipAddr);
+int ch34xi2cBlockWrite(uint8_t * buf, uint32_t address, uint32_t blockSize, uint32_t sectorSize, uint8_t algorithm, uint8_t progDevice, uint8_t chipAddr);
 
 #endif /* __CH34x_I2C_H__ */

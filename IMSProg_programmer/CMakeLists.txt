@@ -166,6 +166,7 @@ add_executable(${PROJECT_NAME}
     dialogsfdp.cpp
     dialognandsr.cpp
     dialogsecurity.cpp
+    dialogi2creg.cpp
     dialognandsecurity.cpp
     dialogcompare.cpp
     dialogsr.cpp
@@ -195,6 +196,7 @@ add_executable(${PROJECT_NAME}
     dialogrp.h
     dialogsfdp.h
     dialogsecurity.h
+    dialogi2creg.h
     dialognandsecurity.h
     dialognandsr.h
     dialogcompare.h
@@ -224,6 +226,7 @@ add_executable(${PROJECT_NAME}
     dialogsfdp.ui
     dialognandsr.ui
     dialogsecurity.ui
+    dialogi2creg.ui
     dialognandsecurity.ui
     dialogcompare.ui
     dialogsr.ui

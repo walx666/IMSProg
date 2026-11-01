@@ -492,13 +492,125 @@ QPushButton::pressed{background-color: rgb(115, 210, 22);}</string>
           </widget>
          </item>
          <item row="9" column="0">
+          <widget class="QLabel" name="label_13">
+           <property name="text">
+            <string>I2C address</string>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_i2cAddr">
+           <property name="spacing">
+            <number>2</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="label_i2cAddrFix">
+             <property name="toolTip">
+              <string>Device type identifier</string>
+             </property>
+             <property name="text">
+              <string>1010</string>
+             </property>
+            </widget>
+           </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_i2cA2">
+              <property name="minimumSize">
+               <size>
+                <width>22</width>
+                <height>21</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>22</width>
+                <height>21</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>A2 / E2 chip enable pin</string>
+              </property>
+              <property name="text">
+               <string>0</string>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_i2cA1">
+              <property name="minimumSize">
+               <size>
+                <width>22</width>
+                <height>21</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>22</width>
+                <height>21</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>A1 / E1 chip enable pin</string>
+              </property>
+              <property name="text">
+               <string>0</string>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_i2cA0">
+              <property name="minimumSize">
+               <size>
+                <width>22</width>
+                <height>21</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>22</width>
+                <height>21</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>A0 / E0 chip enable pin</string>
+              </property>
+              <property name="text">
+               <string>0</string>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           <item>
+            <widget class="QLabel" name="label_i2cAddr">
+             <property name="font">
+              <font>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>A0</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="10" column="0">
           <widget class="QLabel" name="label_11">
            <property name="text">
             <string>ECC size</string>
            </property>
           </widget>
          </item>
-         <item row="9" column="1">
+         <item row="10" column="1">
           <widget class="QComboBox" name="comboBox_ECC">
            <property name="minimumSize">
             <size>
@@ -526,14 +638,14 @@ QPushButton::pressed{background-color: rgb(115, 210, 22);}</string>
            </property>
           </widget>
          </item>
-         <item row="10" column="0">
+         <item row="11" column="0">
           <widget class="QLabel" name="label_12">
            <property name="text">
             <string>Operations</string>
            </property>
           </widget>
          </item>
-         <item row="10" column="1">
+         <item row="11" column="1">
           <widget class="QComboBox" name="comboBox_raw">
            <property name="minimumSize">
             <size>
@@ -561,7 +673,7 @@ QPushButton::pressed{background-color: rgb(115, 210, 22);}</string>
            </property>
           </widget>
          </item>
-         <item row="11" column="0">
+         <item row="12" column="0">
           <spacer name="verticalSpacer_2">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -574,7 +686,7 @@ QPushButton::pressed{background-color: rgb(115, 210, 22);}</string>
            </property>
           </spacer>
          </item>
-         <item row="11" column="1">
+         <item row="12" column="1">
           <spacer name="verticalSpacer_3">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -587,7 +699,7 @@ QPushButton::pressed{background-color: rgb(115, 210, 22);}</string>
            </property>
           </spacer>
          </item>
-         <item row="12" column="0" colspan="2">
+         <item row="13" column="0" colspan="2">
           <layout class="QHBoxLayout" name="horizontalLayout_4">
            <property name="topMargin">
             <number>0</number>

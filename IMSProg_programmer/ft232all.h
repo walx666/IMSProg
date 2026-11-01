@@ -34,8 +34,8 @@ int ft232ReadNbytes(uint8_t *buffer, uint32_t sizeToRead);
 
 //I2C
 int ft232hSetSpeedI2C(uint16_t speed_khz);
-int ft232I2cBlockWrite(uint8_t *data, uint32_t address, uint32_t blockSize, uint32_t sectorSize, uint8_t algorithm);
-int ft232I2cBlockRead(uint8_t *data, uint32_t address, uint32_t blockSize, uint8_t algorithm);
+int ft232I2cBlockWrite(uint8_t *data, uint32_t address, uint32_t blockSize, uint32_t sectorSize, uint8_t algorithm, uint8_t chipAddr);
+int ft232I2cBlockRead(uint8_t *data, uint32_t address, uint32_t blockSize, uint8_t algorithm, uint8_t chipAddr);
 
 //MicroWire
 int initFt232hMW(void);
